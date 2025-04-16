@@ -74,7 +74,15 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
-        <div class="card bg-base-100 shadow-xl">
+        <div class="card bg-base-100 shadow-xl relative">
+            <!-- 主题切换放在右上角 -->
+            <div class="form-control absolute top-4 right-4 z-10">
+                <label class="label cursor-pointer justify-start gap-4">
+                    <span class="label-text font-medium">深色模式</span>
+                    <input type="checkbox" id="theme-toggle" class="toggle toggle-primary">
+                </label>
+            </div>
+            
             <div class="card-body">
                 <h1 class="card-title text-2xl font-bold text-center mb-6">YouTube频道封面图生成器</h1>
                 
@@ -134,14 +142,6 @@
                                     <div class="text-xs text-gray-500 mt-1">提示：可以选中文字设置不同颜色</div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- 主题切换 -->
-                        <div class="form-control">
-                            <label class="label cursor-pointer justify-start gap-4">
-                                <span class="label-text font-medium">深色模式</span>
-                                <input type="checkbox" id="theme-toggle" class="toggle toggle-primary">
-                            </label>
                         </div>
                     </div>
                     
@@ -501,57 +501,114 @@
             updatePreview();
         }
         
-        // 拖拽相关变量
+        // 图标拖拽功能实现
         let draggedItem = null;
         
         // 拖拽开始
         function handleDragStart(e) {
+            e.stopPropagation();
             draggedItem = this;
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.innerHTML);
+            e.dataTransfer.setData('text/plain', this.dataset.id);
             this.style.opacity = '0.4';
         }
         
         // 拖拽经过
         function handleDragOver(e) {
             e.preventDefault();
+            e.stopPropagation();
             e.dataTransfer.dropEffect = 'move';
-            return false;
         }
         
         // 放置
         function handleDrop(e) {
+            e.preventDefault();
             e.stopPropagation();
             
-            if (draggedItem !== this) {
+            // 获取被拖拽的图标ID
+            const draggedId = e.dataTransfer.getData('text/plain');
+            
+            // 如果不存在ID或者是从外部拖拽的文件，则不处理
+            if (!draggedId || draggedId === '') {
+                return;
+            }
+            
+            if (draggedItem && draggedItem !== this) {
                 // 获取两个元素的位置
                 const allItems = Array.from(iconsContainer.querySelectorAll('.icon-item'));
                 const draggedIndex = allItems.indexOf(draggedItem);
                 const targetIndex = allItems.indexOf(this);
                 
-                // 更新图标数组
-                const temp = icons[draggedIndex];
-                icons.splice(draggedIndex, 1);
-                icons.splice(targetIndex, 0, temp);
-                
-                // 更新DOM
-                if (draggedIndex < targetIndex) {
-                    iconsContainer.insertBefore(draggedItem, this.nextSibling);
-                } else {
-                    iconsContainer.insertBefore(draggedItem, this);
+                if (draggedIndex !== -1 && targetIndex !== -1) {
+                    // 更新图标数组
+                    const temp = icons[draggedIndex];
+                    icons.splice(draggedIndex, 1);
+                    icons.splice(targetIndex, 0, temp);
+                    
+                    // 更新DOM
+                    if (draggedIndex < targetIndex) {
+                        iconsContainer.insertBefore(draggedItem, this.nextSibling);
+                    } else {
+                        iconsContainer.insertBefore(draggedItem, this);
+                    }
+                    
+                    // 更新预览
+                    updatePreview();
                 }
-                
-                updatePreview();
             }
-            
-            return false;
         }
         
         // 拖拽结束
-        function handleDragEnd() {
+        function handleDragEnd(e) {
+            e.stopPropagation();
             this.style.opacity = '1';
             draggedItem = null;
         }
+        
+        // 图标拖放区域处理
+        iconDropZone.addEventListener('dragenter', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('active');
+        });
+        
+        iconDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy';
+            this.classList.add('active');
+        });
+        
+        iconDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+        });
+        
+        iconDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+            
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            // 只处理文件
+            if (files && files.length > 0) {
+                handleMultipleIcons(files);
+            }
+        });
+        
+        // 添加点击事件处理程序，使用户可以通过点击上传图标
+        iconDropZone.addEventListener('click', function() {
+            iconInput.click();
+        });
+        
+        // 图标输入事件
+        iconInput.addEventListener('change', function(e) {
+            handleMultipleIcons(e.target.files);
+            this.value = ''; // 重置input以允许上传相同文件
+        });
         
         // 事件监听
         avatarBtn.addEventListener('click', function() {
@@ -576,50 +633,6 @@
                 reader.readAsDataURL(file);
             }
         });
-        
-        // 设置拖放区域
-        iconDropZone.addEventListener('click', function() {
-            iconInput.click();
-        });
-        
-        iconInput.addEventListener('change', function(e) {
-            handleMultipleIcons(e.target.files);
-            this.value = ''; // 重置input以允许上传相同文件
-        });
-        
-        // 拖放功能
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            iconDropZone.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            iconDropZone.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            iconDropZone.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            iconDropZone.classList.add('active');
-        }
-        
-        function unhighlight() {
-            iconDropZone.classList.remove('active');
-        }
-        
-        iconDropZone.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleMultipleIcons(files);
-        }
         
         // 昵称输入事件
         nicknameInput.addEventListener('input', updatePreview);
