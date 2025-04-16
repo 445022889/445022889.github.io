@@ -4,155 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube频道封面图生成器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5.0.0/dist/full.css" rel="stylesheet" type="text/css" />
+    <!-- 引入Tailwind CSS和DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+    <!-- 引入Quill富文本编辑器 -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     <style>
-        .preview-container {
-            background-color: var(--b2);
-            border-radius: 1rem;
-            padding: 1rem;
-            min-height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* 自定义样式补充 */
+        .canvas-container {
+            width: 100%;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
         #preview-canvas {
             max-width: 100%;
-            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+        .icon-item {
+            cursor: move;
+        }
+        .icon-preview {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover, .drop-zone.active {
+            border-color: #6b7280;
+            background-color: rgba(243, 244, 246, 0.5);
+        }
+        .avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* 编辑器容器自定义样式 */
+        .editor-container {
+            height: 200px;
+            margin-bottom: 10px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        /* 自定义Quill编辑器样式 */
+        .ql-toolbar.ql-snow {
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .ql-container.ql-snow {
+            border-bottom-left-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+            height: calc(100% - 42px);
         }
     </style>
 </head>
-<body class="min-h-screen bg-base-200">
-    <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-            <a class="btn btn-ghost normal-case text-xl">YouTube封面生成器</a>
-        </div>
-        <div class="flex-none">
-            <label class="swap swap-rotate">
-                <input type="checkbox" class="theme-controller" value="dark" />
-                <svg class="swap-on fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
-                <svg class="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
-            </label>
-        </div>
-    </div>
-
-    <div class="container mx-auto p-4 max-w-7xl">
-        <div class="flex flex-col lg:flex-row gap-4">
-            <!-- 控制面板 -->
-            <div class="w-full lg:w-1/2">
-                <div class="card bg-base-100 shadow-xl">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">基本信息</h2>
-                        
-                        <!-- 头像上传 -->
-                        <div class="form-control w-full">
-                            <label class="label">
-                                <span class="label-text">头像</span>
-                            </label>
-                            <div class="flex items-center gap-4">
-                                <div class="avatar" id="avatar-preview" style="display: none;">
-                                    <div class="w-24 rounded-full">
-                                        <img id="avatar-img" src="" alt="头像预览">
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h1 class="card-title text-2xl font-bold text-center mb-6">YouTube频道封面图生成器</h1>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 控制面板 -->
+                    <div class="space-y-6">
+                        <!-- 基本信息 -->
+                        <div class="card bg-base-200">
+                            <div class="card-body">
+                                <h2 class="card-title text-lg">基本信息</h2>
+                                
+                                <!-- 头像上传 -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">频道头像</span>
+                                    </label>
+                                    <div class="flex items-center space-x-4">
+                                        <button class="btn btn-primary" id="avatar-btn">选择头像</button>
+                                        <input type="file" id="avatar-input" accept="image/*" class="hidden">
+                                        <div class="avatar-preview hidden" id="avatar-preview">
+                                            <img id="avatar-img" src="" alt="头像预览">
+                                        </div>
                                     </div>
                                 </div>
-                                <input type="file" id="avatar-input" accept="image/*" class="file-input file-input-bordered w-full max-w-xs" />
+                                
+                                <!-- 昵称输入 -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">频道昵称</span>
+                                    </label>
+                                    <input type="text" id="nickname-input" placeholder="请输入频道昵称" class="input input-bordered">
+                                </div>
+                                
+                                <!-- 图标上传 -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">图标管理</span>
+                                    </label>
+                                    
+                                    <!-- 拖放区域 -->
+                                    <div class="drop-zone mb-3" id="icon-drop-zone">
+                                        <p>拖放图标文件到此处或点击选择文件</p>
+                                        <p class="text-xs text-gray-500 mt-1">支持批量上传多个图标</p>
+                                    </div>
+                                    <input type="file" id="icon-input" accept="image/*" multiple class="hidden">
+                                    
+                                    <!-- 图标容器 -->
+                                    <div class="flex flex-wrap gap-2" id="icons-container"></div>
+                                </div>
+                                
+                                <!-- 内容输入 - 富文本编辑器 -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text font-medium">文章内容</span>
+                                    </label>
+                                    <div class="editor-container" id="editor-container"></div>
+                                    <div class="text-xs text-gray-500 mt-1">提示：可以选中文字设置不同颜色</div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- 昵称输入 -->
-                        <div class="form-control w-full">
-                            <label class="label">
-                                <span class="label-text">昵称</span>
+                        
+                        <!-- 主题切换 -->
+                        <div class="form-control">
+                            <label class="label cursor-pointer justify-start gap-4">
+                                <span class="label-text font-medium">深色模式</span>
+                                <input type="checkbox" id="theme-toggle" class="toggle toggle-primary">
                             </label>
-                            <input type="text" id="nickname-input" placeholder="请输入频道昵称" class="input input-bordered w-full" />
-                        </div>
-
-                        <!-- 图标上传区域 -->
-                        <div class="form-control w-full">
-                            <label class="label">
-                                <span class="label-text">图标</span>
-                            </label>
-                            <div class="flex flex-wrap gap-2 p-2 border-2 border-dashed rounded-lg min-h-[100px]" id="icons-container"></div>
-                            <input type="file" id="icon-input" accept="image/*" multiple class="file-input file-input-bordered w-full mt-2" />
-                            <div class="text-sm text-base-content/70 mt-1">支持多选或拖拽上传</div>
-                        </div>
-
-                        <!-- 文章内容 -->
-                        <div class="form-control w-full">
-                            <label class="label">
-                                <span class="label-text">文章内容</span>
-                            </label>
-                            <textarea id="content-input" class="textarea textarea-bordered h-24" placeholder="请输入文章内容"></textarea>
                         </div>
                     </div>
-                </div>
-
-                <!-- 样式设置 -->
-                <div class="card bg-base-100 shadow-xl mt-4">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">样式设置</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">文字大小</span>
-                                </label>
-                                <input type="range" id="text-size" min="12" max="54" value="54" class="range" disabled />
-                                <div class="text-center mt-1" id="text-size-value">54px</div>
-                            </div>
-
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">文字颜色</span>
-                                </label>
-                                <input type="color" id="text-color" class="w-full h-12 rounded-lg" value="#000000">
-                            </div>
-
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">背景颜色</span>
-                                </label>
-                                <input type="color" id="bg-color" class="w-full h-12 rounded-lg" value="#FFFFFF">
-                            </div>
-
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">字体</span>
-                                </label>
-                                <select id="font-family" class="select select-bordered w-full">
-                                    <option value="Arial">Arial</option>
-                                    <option value="'Microsoft YaHei'">微软雅黑</option>
-                                    <option value="'SimHei'">黑体</option>
-                                    <option value="'SimSun'">宋体</option>
-                                    <option value="'KaiTi'">楷体</option>
-                                    <option value="'Times New Roman'">Times New Roman</option>
-                                    <option value="'Courier New'">Courier New</option>
-                                    <option value="'Georgia'">Georgia</option>
-                                </select>
-                            </div>
-
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">边框圆角</span>
-                                </label>
-                                <input type="range" id="border-radius" min="0" max="20" value="5" class="range" />
-                                <div class="text-center mt-1" id="border-radius-value">5px</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 预览区域 -->
-            <div class="w-full lg:w-1/2">
-                <div class="card bg-base-100 shadow-xl">
-                    <div class="card-body">
-                        <h2 class="card-title text-lg">预览</h2>
-                        <div class="preview-container">
+                    
+                    <!-- 预览区域 -->
+                    <div class="flex flex-col space-y-4">
+                        <h2 class="text-lg font-bold">预览区域</h2>
+                        <div class="canvas-container rounded-xl overflow-hidden">
                             <canvas id="preview-canvas"></canvas>
                         </div>
-                        <div class="card-actions justify-end mt-4">
-                            <button id="download-btn" class="btn btn-primary">保存封面图</button>
-                        </div>
+                        <button id="download-btn" class="btn btn-primary w-full mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            保存封面图
+                        </button>
                     </div>
                 </div>
             </div>
@@ -161,210 +165,73 @@
 
     <script>
         // 获取DOM元素
+        const avatarBtn = document.getElementById('avatar-btn');
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
         const avatarImg = document.getElementById('avatar-img');
         const nicknameInput = document.getElementById('nickname-input');
         const iconInput = document.getElementById('icon-input');
+        const iconDropZone = document.getElementById('icon-drop-zone');
         const iconsContainer = document.getElementById('icons-container');
-        const contentInput = document.getElementById('content-input');
-        const textSize = document.getElementById('text-size');
-        const textSizeValue = document.getElementById('text-size-value');
-        const textColor = document.getElementById('text-color');
-        const bgColor = document.getElementById('bg-color');
-        const fontFamily = document.getElementById('font-family');
-        const borderRadius = document.getElementById('border-radius');
-        const borderRadiusValue = document.getElementById('border-radius-value');
         const previewCanvas = document.getElementById('preview-canvas');
         const downloadBtn = document.getElementById('download-btn');
-        const themeController = document.querySelector('.theme-controller');
-
-        // 主题切换
-        themeController.addEventListener('change', (e) => {
-            document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // 初始化Quill编辑器
+        const quill = new Quill('#editor-container', {
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'color': [] }],
+                    [{ 'font': [] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }]
+                ]
+            },
+            theme: 'snow'
         });
-
+        
+        // 设置默认内容
+        quill.setText('My Wife And Her Family Locked Me Out Of Our House During A Snowstorm, Laughing Through The Window: "Freeze To Death, WORTHLESS IDIOT!" I Got Angry and Walked Away Without A Word. Three Days Later, My Inbox Was FLOODED With 47');
+        
+        // 设置部分文字颜色（示例）
+        quill.formatText(116, 23, 'color', '#c70000'); // "Freeze To Death,"
+        quill.formatText(140, 17, 'color', '#c70000'); // "WORTHLESS IDIOT!"
+        quill.formatText(236, 45, 'color', '#c70000'); // "Three Days Later, My Inbox Was FLOODED With 47"
+        
         // 设置Canvas尺寸
         const canvas = previewCanvas;
         const ctx = canvas.getContext('2d');
         canvas.width = 1327;
-
+        
         // 头像图片对象
         let avatarImage = null;
-
+        
         // 图标数组
         let icons = [];
-
-        // 头像预览
-        avatarInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    avatarImg.src = event.target.result;
-                    avatarPreview.style.display = 'block';
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        avatarImage = img;
-                        updatePreview();
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // 批量添加图标
-        iconInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            files.forEach(file => addIcon(file));
-        });
-
-        // 拖拽上传图标
-        iconsContainer.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            iconsContainer.classList.add('border-2', 'border-dashed', 'border-primary');
-        });
-
-        iconsContainer.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            iconsContainer.classList.remove('border-2', 'border-dashed', 'border-primary');
-        });
-
-        iconsContainer.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            iconsContainer.classList.remove('border-2', 'border-dashed', 'border-primary');
-            
-            const files = Array.from(e.dataTransfer.files);
-            files.forEach(file => {
-                if (file.type.startsWith('image/')) {
-                    addIcon(file);
-                }
-            });
-        });
-
-        // 添加图标
-        function addIcon(file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const iconImage = new Image();
-                iconImage.onload = function() {
-                    const iconId = 'icon-' + Date.now();
-                    icons.push({
-                        id: iconId,
-                        image: iconImage
-                    });
-
-                    // 创建图标预览元素
-                    const iconItem = document.createElement('div');
-                    iconItem.className = 'badge badge-lg gap-2 cursor-move';
-                    iconItem.dataset.id = iconId;
-                    iconItem.draggable = true;
-
-                    const iconPreview = document.createElement('img');
-                    iconPreview.className = 'w-4 h-4 object-contain';
-                    iconPreview.src = event.target.result;
-
-                    const iconRemove = document.createElement('span');
-                    iconRemove.className = 'cursor-pointer text-error';
-                    iconRemove.innerHTML = '×';
-                    iconRemove.onclick = function() {
-                        removeIcon(iconId);
-                    };
-
-                    iconItem.appendChild(iconPreview);
-                    iconItem.appendChild(iconRemove);
-                    iconsContainer.appendChild(iconItem);
-
-                    // 添加拖拽事件
-                    iconItem.addEventListener('dragstart', handleDragStart);
-                    iconItem.addEventListener('dragover', handleDragOver);
-                    iconItem.addEventListener('drop', handleDrop);
-                    iconItem.addEventListener('dragend', handleDragEnd);
-
-                    updatePreview();
-                };
-                iconImage.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // 移除图标
-        function removeIcon(iconId) {
-            icons = icons.filter(icon => icon.id !== iconId);
-            const iconElement = document.querySelector(`[data-id="${iconId}"]`);
-            if (iconElement) {
-                iconElement.remove();
-            }
-            updatePreview();
-        }
-
-        // 拖拽排序相关变量
-        let dragSrcEl = null;
-
-        function handleDragStart(e) {
-            dragSrcEl = this;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.innerHTML);
-            this.classList.add('opacity-50');
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDrop(e) {
-            e.stopPropagation();
-            if (dragSrcEl !== this) {
-                const allIcons = [...iconsContainer.querySelectorAll('[data-id]')];
-                const draggedIndex = allIcons.indexOf(dragSrcEl);
-                const droppedIndex = allIcons.indexOf(this);
-
-                // 更新DOM
-                if (draggedIndex < droppedIndex) {
-                    this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
-                } else {
-                    this.parentNode.insertBefore(dragSrcEl, this);
-                }
-
-                // 更新图标数组
-                const temp = icons[draggedIndex];
-                icons.splice(draggedIndex, 1);
-                icons.splice(droppedIndex, 0, temp);
-
-                updatePreview();
-            }
-            return false;
-        }
-
-        function handleDragEnd() {
-            this.classList.remove('opacity-50');
-        }
-
+        
         // 更新预览
         function updatePreview() {
-            // 计算画布高度（根据内容自适应）
-            const content = contentInput.value || 'My mother gave me a Chanel bag. My roommate was so jealous that she kept annoying me part 2';
+            // 获取Quill编辑器内容（Delta格式）
+            const delta = quill.getContents();
+            const content = delta.ops;
+            
+            // 计算画布高度
             const fontSize = 54; // 固定文章字号为54px
             const lineHeight = fontSize * 1.2;
-            
-            // 临时设置字体以计算文本高度
-            ctx.font = `bold 54px ${fontFamily.value}`;
             
             // 文本换行处理计算高度
             const leftPadding = 100; // 左侧边距
             const rightPadding = 100; // 右侧边距
-            const maxWidth = canvas.width - (leftPadding + rightPadding); // 确保左右边距相等
-            const words = content.split(' ');
+            const maxWidth = canvas.width - (leftPadding + rightPadding);
+            
+            // 临时计算文本高度
+            ctx.font = `bold ${fontSize}px Arial`;
+            
+            // 获取纯文本内容用于计算高度
+            const plainText = quill.getText();
+            const words = plainText.split(' ');
             let line = '';
-            // 初始文本Y位置 - 调整为头像底部(160)加上一个图标高度(24px)
-            let y = 160 + 24; 
+            let y = 160 + 24;
             let textHeight = 0;
             
             for (let i = 0; i < words.length; i++) {
@@ -381,7 +248,7 @@
                 }
             }
             
-            // 计算总高度（头部空间 + 文本高度 + 底部空间）
+            // 计算总高度
             const totalHeight = Math.max(400, 200 + textHeight + 100);
             canvas.height = totalHeight;
             
@@ -389,11 +256,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // 绘制背景
-            ctx.fillStyle = bgColor.value;
+            ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // 绘制圆角矩形背景
-            const borderRadiusVal = parseInt(borderRadius.value);
+            const borderRadiusVal = 10; // 固定圆角大小
             const rectWidth = canvas.width - 40;
             const rectHeight = canvas.height - 40;
             const rectX = 20;
@@ -412,7 +279,7 @@
             ctx.lineTo(rectX, rectY + borderRadiusVal);
             ctx.quadraticCurveTo(rectX, rectY, rectX + borderRadiusVal, rectY);
             ctx.closePath();
-            ctx.fillStyle = bgColor.value;
+            ctx.fillStyle = '#FFFFFF';
             ctx.fill();
             ctx.restore();
             
@@ -452,30 +319,31 @@
             
             // 绘制昵称
             const nickname = nicknameInput.value || '频道名称';
-            ctx.font = `bold 38px ${fontFamily.value}`;
-            ctx.fillStyle = textColor.value;
+            ctx.font = `bold 38px Arial`;
+            ctx.fillStyle = '#000000';
             ctx.textBaseline = 'top';
             
-            // 计算昵称垂直居中位置 - 头像中心点Y坐标为(60 + 108/2 = 114)
-            const nicknameY = 100 - 38/2; // 头像中心点减去昵称字体高度的一半
+            // 计算昵称垂直居中位置
+            const nicknameY = 100 - 38/2;
             const c170 = 190;
-            // 绘制昵称 - 减少与头像的距离
+            
+            // 绘制昵称
             ctx.fillText(nickname, c170, nicknameY);
             
             // 添加认证标记（蓝色勾号）
-            ctx.fillStyle = '#1DA1F2';
-            ctx.beginPath();
             const nicknameWidth = ctx.measureText(nickname).width;
-            ctx.arc(c170 + nicknameWidth + 15, nicknameY + 19, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = `bold 14px ${fontFamily.value}`;
-            ctx.fillText('✓', c170 + nicknameWidth + 10, nicknameY + 15);
+            
+            // 绘制SVG验证图标
+            const verifiedIcon = new Image();
+            verifiedIcon.onload = function() {
+                const iconSize = 36;
+                ctx.drawImage(verifiedIcon, c170 + nicknameWidth + 10, nicknameY -2, iconSize, iconSize);
+            };
+            verifiedIcon.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1490" ><path d="M956.672 459.776L862.72 397.568c-16.64-11.008-24.832-30.976-20.992-50.688l22.272-110.592c4.096-20.736-2.304-42.24-17.152-57.344-15.104-15.104-36.352-21.504-57.344-17.152l-110.592 22.272c-19.712 4.096-39.424-4.352-50.688-20.992L565.76 69.12c-11.776-17.664-31.488-28.16-52.736-28.16s-40.96 10.496-52.736 28.16l-62.464 93.952c-11.008 16.64-30.976 24.832-50.688 20.992l-110.592-22.272c-20.736-4.096-42.24 2.304-57.344 17.152-15.104 15.104-21.504 36.352-17.152 57.344l22.272 110.592c3.84 19.712-4.352 39.424-20.992 50.688l-93.952 62.464c-17.664 11.776-28.16 31.488-28.16 52.736s10.496 40.96 28.16 52.736l93.952 62.464c16.64 11.008 24.832 30.976 20.992 50.688l-22.272 110.592c-4.096 20.736 2.304 42.24 17.152 57.344 15.104 15.104 36.352 21.504 57.344 17.152l110.592-22.272c19.712-4.096 39.424 4.352 50.688 20.992l62.464 93.952c11.776 17.664 31.488 28.16 52.736 28.16s40.96-10.496 52.736-28.16l62.464-93.952c11.008-16.64 30.976-24.832 50.688-20.992l110.592 22.272c20.736 4.096 42.24-2.304 57.344-17.152 15.104-15.104 21.504-36.352 17.152-57.344l-22.272-110.592c-3.84-19.712 4.352-39.424 20.992-50.688l93.952-62.464c17.664-11.776 28.16-31.488 28.16-52.736s-10.496-41.216-28.16-52.992z m-249.344-22.016l-211.456 215.04c-5.888 6.144-13.824 9.216-22.016 9.216-7.168 0-14.592-2.56-20.224-7.68l-138.24-122.112c-12.8-11.264-13.824-30.72-2.816-43.264 11.264-12.8 30.72-13.824 43.264-2.816l116.48 102.912 190.976-194.304c11.776-12.032 31.232-12.288 43.52-0.256 12.288 11.52 12.288 30.976 0.512 43.264z" fill="#1DA1F2" p-id="1491"></path></svg>');
             
             // 绘制图标
             let iconX = c170;
-            // 图标垂直居中位置 - 头像中心点Y坐标为114，图标位于昵称下方
-            const iconY = nicknameY + 38 + 5; // 昵称Y位置 + 昵称高度 + 间距
+            const iconY = nicknameY + 38 + 5;
             const iconSize = 36;
             const iconGap = 12;
             
@@ -504,51 +372,282 @@
                 }
             }
             
-            // 绘制内容
-            ctx.font = `bold 54px ${fontFamily.value}`; // 固定文章字号为54px
-            ctx.fillStyle = textColor.value;
+            // 绘制富文本内容
+            const startY = 168 + 30; // 内容起始Y位置
+            let currentY = startY;
+            let currentX = leftPadding;
+            let currentLine = '';
             
-            // 文本换行处理
-            line = '';
-            // 计算文章内容的起始位置：头像底部(60+108=168)加上适当间距
-            y = 168 + 30;
+            // 解析Delta格式内容并绘制到Canvas
+            let plainTextIndex = 0; // 追踪纯文本索引
             
-            for (let i = 0; i < words.length; i++) {
-                const testLine = line + words[i] + ' ';
-                const metrics = ctx.measureText(testLine);
-                const testWidth = metrics.width;
+            for (let i = 0; i < content.length; i++) {
+                const op = content[i];
+                const text = op.insert;
+                const attributes = op.attributes || {};
                 
-                if (testWidth > maxWidth && i > 0) {
-                    ctx.fillText(line, leftPadding, y);
-                    line = words[i] + ' ';
-                    y += lineHeight;
-                } else {
-                    line = testLine;
+                // 设置文本颜色
+                let textColor = '#000000'; // 默认黑色
+                if (attributes.color) {
+                    textColor = attributes.color;
+                }
+                
+                // 设置字体属性
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.fillStyle = textColor;
+                
+                // 按字符绘制以支持不同颜色
+                for (let j = 0; j < text.length; j++) {
+                    const char = text[j];
+                    
+                    // 处理换行
+                    if (char === '\n') {
+                        ctx.fillText(currentLine, currentX, currentY);
+                        currentLine = '';
+                        currentX = leftPadding;
+                        currentY += lineHeight;
+                        plainTextIndex++;
+                        continue;
+                    }
+                    
+                    const testLine = currentLine + char;
+                    const metrics = ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+                    
+                    if (testWidth > maxWidth && currentLine !== '') {
+                        ctx.fillText(currentLine, currentX, currentY);
+                        currentLine = char;
+                        currentX = leftPadding;
+                        currentY += lineHeight;
+                    } else {
+                        currentLine += char;
+                    }
+                    
+                    plainTextIndex++;
                 }
             }
-            ctx.fillText(line, leftPadding, y);
+            
+            // 绘制最后一行
+            if (currentLine !== '') {
+                ctx.fillText(currentLine, currentX, currentY);
+            }
         }
-
-        // 绑定事件监听
-        [nicknameInput, contentInput, textSize, textColor, bgColor, fontFamily, borderRadius].forEach(el => {
-            el.addEventListener('input', updatePreview);
+        
+        // 添加图标
+        function addIcon(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const iconImage = new Image();
+                iconImage.onload = function() {
+                    const iconId = 'icon-' + Date.now() + '-' + Math.random().toString(36).substring(2, 10);
+                    icons.push({
+                        id: iconId,
+                        image: iconImage
+                    });
+                    
+                    // 创建图标预览元素
+                    const iconItem = document.createElement('div');
+                    iconItem.className = 'icon-item badge badge-lg gap-1 p-3 bg-base-300 cursor-move';
+                    iconItem.dataset.id = iconId;
+                    iconItem.draggable = true;
+                    
+                    const iconPreview = document.createElement('img');
+                    iconPreview.className = 'icon-preview mr-1';
+                    iconPreview.src = event.target.result;
+                    
+                    const iconRemove = document.createElement('span');
+                    iconRemove.className = 'ml-1 cursor-pointer hover:text-error';
+                    iconRemove.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>';
+                    iconRemove.onclick = function(e) {
+                        e.stopPropagation();
+                        removeIcon(iconId);
+                    };
+                    
+                    iconItem.appendChild(iconPreview);
+                    iconItem.appendChild(iconRemove);
+                    iconsContainer.appendChild(iconItem);
+                    
+                    // 添加拖拽事件
+                    iconItem.addEventListener('dragstart', handleDragStart);
+                    iconItem.addEventListener('dragover', handleDragOver);
+                    iconItem.addEventListener('drop', handleDrop);
+                    iconItem.addEventListener('dragend', handleDragEnd);
+                    
+                    updatePreview();
+                };
+                iconImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 处理批量添加图标
+        function handleMultipleIcons(files) {
+            if (files && files.length) {
+                Array.from(files).forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        addIcon(file);
+                    }
+                });
+            }
+        }
+        
+        // 移除图标
+        function removeIcon(iconId) {
+            icons = icons.filter(icon => icon.id !== iconId);
+            const iconElement = document.querySelector(`.icon-item[data-id="${iconId}"]`);
+            if (iconElement) {
+                iconsContainer.removeChild(iconElement);
+            }
+            updatePreview();
+        }
+        
+        // 拖拽相关变量
+        let draggedItem = null;
+        
+        // 拖拽开始
+        function handleDragStart(e) {
+            draggedItem = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.style.opacity = '0.4';
+        }
+        
+        // 拖拽经过
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        
+        // 放置
+        function handleDrop(e) {
+            e.stopPropagation();
+            
+            if (draggedItem !== this) {
+                // 获取两个元素的位置
+                const allItems = Array.from(iconsContainer.querySelectorAll('.icon-item'));
+                const draggedIndex = allItems.indexOf(draggedItem);
+                const targetIndex = allItems.indexOf(this);
+                
+                // 更新图标数组
+                const temp = icons[draggedIndex];
+                icons.splice(draggedIndex, 1);
+                icons.splice(targetIndex, 0, temp);
+                
+                // 更新DOM
+                if (draggedIndex < targetIndex) {
+                    iconsContainer.insertBefore(draggedItem, this.nextSibling);
+                } else {
+                    iconsContainer.insertBefore(draggedItem, this);
+                }
+                
+                updatePreview();
+            }
+            
+            return false;
+        }
+        
+        // 拖拽结束
+        function handleDragEnd() {
+            this.style.opacity = '1';
+            draggedItem = null;
+        }
+        
+        // 事件监听
+        avatarBtn.addEventListener('click', function() {
+            avatarInput.click();
         });
-
-        // 更新边框圆角值显示
-        borderRadius.addEventListener('input', function() {
-            borderRadiusValue.textContent = this.value + 'px';
+        
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    avatarImg.src = event.target.result;
+                    avatarPreview.classList.remove('hidden');
+                    
+                    // 创建图片对象用于Canvas
+                    avatarImage = new Image();
+                    avatarImage.onload = function() {
+                        updatePreview();
+                    };
+                    avatarImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
         });
-
-        // 下载按钮点击事件
+        
+        // 设置拖放区域
+        iconDropZone.addEventListener('click', function() {
+            iconInput.click();
+        });
+        
+        iconInput.addEventListener('change', function(e) {
+            handleMultipleIcons(e.target.files);
+            this.value = ''; // 重置input以允许上传相同文件
+        });
+        
+        // 拖放功能
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            iconDropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            iconDropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            iconDropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            iconDropZone.classList.add('active');
+        }
+        
+        function unhighlight() {
+            iconDropZone.classList.remove('active');
+        }
+        
+        iconDropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleMultipleIcons(files);
+        }
+        
+        // 昵称输入事件
+        nicknameInput.addEventListener('input', updatePreview);
+        
+        // 富文本编辑器内容更改事件
+        quill.on('text-change', function() {
+            updatePreview();
+        });
+        
+        // 主题切换
+        themeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        });
+        
+        // 下载按钮事件
         downloadBtn.addEventListener('click', function() {
             const link = document.createElement('a');
             link.download = 'youtube-cover.png';
-            link.href = canvas.toDataURL();
+            link.href = canvas.toDataURL('image/png');
             link.click();
         });
-
+        
         // 初始化预览
         updatePreview();
     </script>
 </body>
-</html>
+</html> 
